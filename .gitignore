@@ -1,0 +1,65 @@
+# -------------------------
+# Vivado Generated Files
+# -------------------------
+*.jou
+*.log
+*.str
+*.zip
+*.html
+*.xml
+
+# Vivado project cache
+*.cache/
+*.hw/
+*.ip_user_files/
+*.runs/
+*.sim/
+*.srcs/sources_1/bd/*/hw_handoff/
+*.gen/
+*.srcs/sources_1/bd/*/bd.tcl.bak
+*.srcs/sources_1/bd/*/bd.tcl.backup
+
+# Vivado temp files
+*.tmp
+*.temp
+*.bak
+*.backup
+
+# vivado HLS
+*.log
+*.tcl.bak
+*.data/
+*.autopilot/
+*.hls_prj/
+
+# Board files temp
+*.sdk/
+*.mcs
+*.bin
+*.elf
+
+# Simulation
+*.wdb
+*.vcd
+*.vpd
+*.saif
+*.pb
+
+# Xilinx SDK / Vitis
+*.metadata/
+*.idea/
+*.vitis/
+*.xsa
+*_wrapper.hw/
+*.hwh
+
+# IP output products
+**/ipshared/
+**/.ipcache/
+
+# local OS files
+.DS_Store
+Thumbs.db
+
+# backup
+*~

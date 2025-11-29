@@ -152,6 +152,13 @@ always @(posedge clk or negedge rst_n) begin
 end
 
 // bram0_addr
+/*
+ * Generate BRAM0 addresses to read pixel values based on the counter.
+ *
+ * The bram0_addr is updated on this clock edge and passed into BRAM on the next
+ * cycle, and BRAM has a read latency of 1 cycle. Therefore, we can get the pixel
+ * values after 2 cycles.
+ */
 always @(posedge clk or negedge rst_n) begin
     if (!rst_n) begin
         bram0_addr <= 32'd0;
@@ -189,34 +196,40 @@ always @(posedge clk or negedge rst_n) begin
     end
 end
 
+////////////////////////////////////////////////////////////////////////////////
+// Data Path
+////////////////////////////////////////////////////////////////////////////////
+
 // buffer
+/*
+ * Buffer the 3x3 pixel values, and handle border conditions by zero-padding.
+ *
+ * The buffer layout is as follows:
+ * [0] [1] [2]
+ * [3] [4] [5]
+ * [6] [7] [8]
+ */
 always @(posedge clk or negedge rst_n) begin
     if (!rst_n) begin
-        buffer[0] <= 8'd0;
-        buffer[1] <= 8'd0;
-        buffer[2] <= 8'd0;
-        buffer[3] <= 8'd0;
-        buffer[4] <= 8'd0;
-        buffer[5] <= 8'd0;
-        buffer[6] <= 8'd0;
-        buffer[7] <= 8'd0;
-        buffer[8] <= 8'd0;
+        for (i = 0; i < 9; i = i + 1) begin
+            buffer[i] <= 8'd0;
+        end
     end else if (state == READ_9_PIXELS) begin
         case (counter)
-            4'd2:  buffer[0] <= (x == 0 || y == 0                         ) ? 8'd0 : bram0_dout[7:0];
-            4'd3:  buffer[1] <= (y == 0                                   ) ? 8'd0 : bram0_dout[7:0];
-            4'd4:  buffer[2] <= (x == IMG_WIDTH - 1 || y == 0             ) ? 8'd0 : bram0_dout[7:0];
-            4'd5:  buffer[3] <= (x == 0                                   ) ? 8'd0 : bram0_dout[7:0];
-            4'd6:  buffer[4] <= bram0_dout[7:0];
-            4'd7:  buffer[5] <= (x == IMG_WIDTH - 1                       ) ? 8'd0 : bram0_dout[7:0];
-            4'd8:  buffer[6] <= (x == 0 || y == IMG_HEIGHT - 1            ) ? 8'd0 : bram0_dout[7:0];
-            4'd9:  buffer[7] <= (y == IMG_HEIGHT - 1                      ) ? 8'd0 : bram0_dout[7:0];
+            4'd2:  buffer[0] <= (x == 0 || y == 0)                          ? 8'd0 : bram0_dout[7:0];
+            4'd3:  buffer[1] <= (y == 0)                                    ? 8'd0 : bram0_dout[7:0];
+            4'd4:  buffer[2] <= (x == IMG_WIDTH - 1 || y == 0)              ? 8'd0 : bram0_dout[7:0];
+            4'd5:  buffer[3] <= (x == 0)                                    ? 8'd0 : bram0_dout[7:0];
+            4'd6:  buffer[4] <=                                                      bram0_dout[7:0];
+            4'd7:  buffer[5] <= (x == IMG_WIDTH - 1)                        ? 8'd0 : bram0_dout[7:0];
+            4'd8:  buffer[6] <= (x == 0 || y == IMG_HEIGHT - 1)             ? 8'd0 : bram0_dout[7:0];
+            4'd9:  buffer[7] <= (y == IMG_HEIGHT - 1)                       ? 8'd0 : bram0_dout[7:0];
             4'd10: buffer[8] <= (x == IMG_WIDTH - 1 || y == IMG_HEIGHT - 1) ? 8'd0 : bram0_dout[7:0];
         endcase
     end else if (state == READ_3_PIXELS) begin
         case (counter)
-            4'd2: buffer[2] <= (x == IMG_WIDTH - 1 || y == 0             ) ? 8'd0 : bram0_dout[7:0];
-            4'd3: buffer[5] <= (x == IMG_WIDTH - 1                       ) ? 8'd0 : bram0_dout[7:0];
+            4'd2: buffer[2] <= (x == IMG_WIDTH - 1 || y == 0)              ? 8'd0 : bram0_dout[7:0];
+            4'd3: buffer[5] <= (x == IMG_WIDTH - 1)                        ? 8'd0 : bram0_dout[7:0];
             4'd4: buffer[8] <= (x == IMG_WIDTH - 1 || y == IMG_HEIGHT - 1) ? 8'd0 : bram0_dout[7:0];
         endcase
     end else if (state == WRITE) begin
@@ -228,10 +241,6 @@ always @(posedge clk or negedge rst_n) begin
         buffer[7] <= buffer[8];
     end
 end
-
-////////////////////////////////////////////////////////////////////////////////
-// Data Path
-////////////////////////////////////////////////////////////////////////////////
 
 // mul1, mul2
 always @(posedge clk) begin

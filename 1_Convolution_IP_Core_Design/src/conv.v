@@ -113,10 +113,10 @@ always @(*) begin
             next_state = WRITE;
 
         WRITE:
-            if (x == IMG_WIDTH - 2 && y == IMG_HEIGHT - 2)
+            if (x == IMG_WIDTH - 1 && y == IMG_HEIGHT - 1)
                 next_state = DONE;
             else
-                next_state = (next_x == 1) ? READ_9_PIXELS : READ_3_PIXELS;
+                next_state = (next_x == 0) ? READ_9_PIXELS : READ_3_PIXELS;
 
         DONE:
             next_state = start ? DONE : IDLE;
@@ -136,15 +136,15 @@ end
 
 // next_x, next_y
 always @(*) begin
-    next_x = (x == IMG_WIDTH - 2) ? 1 : x + 1;
-    next_y = (x == IMG_WIDTH - 2) ? y + 1 : y;
+    next_x = (x == IMG_WIDTH - 1) ? 0 : x + 1;
+    next_y = (x == IMG_WIDTH - 1) ? y + 1 : y;
 end
 
 // x, y
 always @(posedge clk or negedge rst_n) begin
     if (!rst_n) begin
-        x <= 1;
-        y <= 1;
+        x <= 0;
+        y <= 0;
     end else if (state == WRITE) begin
         x <= next_x;
         y <= next_y;
@@ -203,21 +203,21 @@ always @(posedge clk or negedge rst_n) begin
         buffer[8] <= 8'd0;
     end else if (state == READ_9_PIXELS) begin
         case (counter)
-            4'd2:  buffer[0] <= bram0_dout[7:0];
-            4'd3:  buffer[1] <= bram0_dout[7:0];
-            4'd4:  buffer[2] <= bram0_dout[7:0];
-            4'd5:  buffer[3] <= bram0_dout[7:0];
+            4'd2:  buffer[0] <= (x == 0 || y == 0                         ) ? 8'd0 : bram0_dout[7:0];
+            4'd3:  buffer[1] <= (y == 0                                   ) ? 8'd0 : bram0_dout[7:0];
+            4'd4:  buffer[2] <= (x == IMG_WIDTH - 1 || y == 0             ) ? 8'd0 : bram0_dout[7:0];
+            4'd5:  buffer[3] <= (x == 0                                   ) ? 8'd0 : bram0_dout[7:0];
             4'd6:  buffer[4] <= bram0_dout[7:0];
-            4'd7:  buffer[5] <= bram0_dout[7:0];
-            4'd8:  buffer[6] <= bram0_dout[7:0];
-            4'd9:  buffer[7] <= bram0_dout[7:0];
-            4'd10: buffer[8] <= bram0_dout[7:0];
+            4'd7:  buffer[5] <= (x == IMG_WIDTH - 1                       ) ? 8'd0 : bram0_dout[7:0];
+            4'd8:  buffer[6] <= (x == 0 || y == IMG_HEIGHT - 1            ) ? 8'd0 : bram0_dout[7:0];
+            4'd9:  buffer[7] <= (y == IMG_HEIGHT - 1                      ) ? 8'd0 : bram0_dout[7:0];
+            4'd10: buffer[8] <= (x == IMG_WIDTH - 1 || y == IMG_HEIGHT - 1) ? 8'd0 : bram0_dout[7:0];
         endcase
     end else if (state == READ_3_PIXELS) begin
         case (counter)
-            4'd2: buffer[2] <= bram0_dout[7:0];
-            4'd3: buffer[5] <= bram0_dout[7:0];
-            4'd4: buffer[8] <= bram0_dout[7:0];
+            4'd2: buffer[2] <= (x == IMG_WIDTH - 1 || y == 0             ) ? 8'd0 : bram0_dout[7:0];
+            4'd3: buffer[5] <= (x == IMG_WIDTH - 1                       ) ? 8'd0 : bram0_dout[7:0];
+            4'd4: buffer[8] <= (x == IMG_WIDTH - 1 || y == IMG_HEIGHT - 1) ? 8'd0 : bram0_dout[7:0];
         endcase
     end else if (state == WRITE) begin
         buffer[0] <= buffer[1];
@@ -289,7 +289,7 @@ always @(posedge clk or negedge rst_n) begin
     if (!rst_n) begin
         bram1_addr <= 32'd0;
     end else if (state == WRITE) begin
-        bram1_addr <= { (y - 1) * (IMG_WIDTH - 2) + (x - 1), 2'b00 };
+        bram1_addr <= { y * IMG_WIDTH + x, 2'b00 };
     end
 end
 
